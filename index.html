@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>資産運用シミュレーター (利益・元本比較あり)</title>
+    <title>資産運用シミュレーター (年月表示対応)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -73,7 +73,7 @@
         }
         .summary-value { font-size: 24px; font-weight: bold; color: #007bff; margin: 0 10px; }
         .summary-label { font-size: 14px; color: #555; }
-        .profit-text { color: #28a745; } /* 利益の緑色 */
+        .profit-text { color: #28a745; }
 
         .chart-container { position: relative; height: 400px; width: 100%; margin-top: 20px; }
         .table-wrapper { width: 100%; overflow-x: auto; margin-top: 20px; border: 1px solid #ddd; background: #fff; }
@@ -82,18 +82,17 @@
         th { background-color: #007bff; color: #fff; text-align: center; position: sticky; top: 0; left: 0; }
         .row-header { position: sticky; left: 0; background-color: #007bff; color: white; z-index: 10; }
         
-        /* 表の行の色分け */
         .row-total td { font-weight: bold; background-color: #f0f8ff; }
         .row-invested td { color: #666; }
         .row-profit td { color: #28a745; font-weight: bold; }
         
-        td:first-child { position: sticky; left: 0; background-color: #f9f9f9; font-weight: bold; z-index: 5; text-align: left; min-width: 100px; }
+        td:first-child { position: sticky; left: 0; background-color: #f9f9f9; font-weight: bold; z-index: 5; text-align: left; min-width: 140px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>資産運用シミュレーター (利益表示対応)</h1>
+    <h1>資産運用シミュレーター (西暦・年月表示)</h1>
     
     <div class="input-area">
         <div class="input-group">
@@ -165,7 +164,7 @@
         </div>
     </div>
 
-    <h2>資産推移グラフ (青：総額 / 灰：元本)</h2>
+    <h2>資産推移グラフ</h2>
     <div class="chart-container">
         <canvas id="assetChart"></canvas>
     </div>
@@ -219,27 +218,42 @@
         const totalMonths = years * 12;
         const monthlyRate = annualRate / 100 / 12;
 
-        let currentAmount = initialPrincipal; // 複利運用後の額
-        let currentPrincipal = initialPrincipal; // 自分が払った元本合計
+        let currentAmount = initialPrincipal; 
+        let currentPrincipal = initialPrincipal; 
 
-        // データ配列
-        let labels = ["現在"];
-        let dataPointsTotal = [Math.floor(currentAmount)]; // 総額
-        let dataPointsPrincipal = [Math.floor(currentPrincipal)]; // 元本
-        let dataPointsProfit = [0]; // 利益
+        // --- 日付計算の準備 ---
+        const startDate = new Date(); // 今日の日付を取得
+        const startYear = startDate.getFullYear();
+        const startMonth = startDate.getMonth(); // 0-11
 
+        let labels = [];
+        let dataPointsTotal = [];
+        let dataPointsPrincipal = [];
+        let dataPointsProfit = [];
+
+        // 0ヶ月目(現在)の処理
+        const currentLabel = `${startYear}年${startMonth + 1}月 (0ヶ月)`;
+        labels.push(currentLabel);
+        dataPointsTotal.push(Math.floor(currentAmount));
+        dataPointsPrincipal.push(Math.floor(currentPrincipal));
+        dataPointsProfit.push(0);
+
+        // 1ヶ月目〜360ヶ月目のループ
         for (let i = 1; i <= totalMonths; i++) {
             // 複利計算
             currentAmount = currentAmount * (1 + monthlyRate);
-            
-            // 積立額決定
             let deposit = (i >= changeMonth) ? newDeposit : baseDeposit;
-            
-            // 加算
             currentAmount += deposit;
             currentPrincipal += deposit;
 
-            labels.push(i + "ヶ月");
+            // 日付ラベル生成
+            // 現在の年月に i ヶ月を足す
+            const futureDate = new Date(startYear, startMonth + i, 1);
+            const futureY = futureDate.getFullYear();
+            const futureM = futureDate.getMonth() + 1; // 0-11を1-12に
+
+            labels.push(`${futureY}年${futureM}月 (${i}ヶ月)`);
+            
             dataPointsTotal.push(Math.floor(currentAmount));
             dataPointsPrincipal.push(Math.floor(currentPrincipal));
             dataPointsProfit.push(Math.floor(currentAmount - currentPrincipal));
@@ -262,24 +276,25 @@
         myChart = new Chart(ctx, {
             type: 'line',
             data: {
+                // ラベルは1年(12ヶ月)ごとに間引いて表示
                 labels: labels.filter((_, i) => i % 12 === 0), 
                 datasets: [
                     {
-                        label: '資産総額 (複利効果込)',
+                        label: '資産総額',
                         data: dataPointsTotal.filter((_, i) => i % 12 === 0),
-                        borderColor: '#007bff', // 青
+                        borderColor: '#007bff',
                         backgroundColor: 'rgba(0, 123, 255, 0.1)',
                         borderWidth: 3,
                         fill: true,
                         tension: 0.1
                     },
                     {
-                        label: '投資元本 (払った額)',
+                        label: '投資元本',
                         data: dataPointsPrincipal.filter((_, i) => i % 12 === 0),
-                        borderColor: '#999', // グレー
+                        borderColor: '#999',
                         backgroundColor: 'rgba(0, 0, 0, 0)',
                         borderWidth: 2,
-                        borderDash: [5, 5], // 点線
+                        borderDash: [5, 5],
                         tension: 0.1
                     }
                 ]
@@ -298,10 +313,8 @@
                                 return label;
                             },
                             afterBody: function(tooltipItems) {
-                                // ツールチップに利益額も追加表示
                                 const dataIndex = tooltipItems[0].dataIndex; 
-                                // filterしているので、実際のインデックスを計算(12倍)
-                                const actualIndex = dataIndex * 12;
+                                const actualIndex = dataIndex * 12; // 間引いているためindexを戻す
                                 const profit = dataPointsProfit[actualIndex];
                                 return '\n💰 利益: +' + profit.toLocaleString() + '円';
                             }
@@ -323,23 +336,21 @@
         tableHead.innerHTML = '';
         tableBody.innerHTML = '';
 
-        // 1. ヘッダー (経過月)
-        let headerHTML = '<tr><th class="row-header">経過月</th>';
+        // ヘッダー (年月) - 表は全データ表示
+        let headerHTML = '<tr><th class="row-header">年月 (経過)</th>';
         labels.forEach(label => headerHTML += `<th>${label}</th>`);
         headerHTML += '</tr>';
         tableHead.innerHTML = headerHTML;
 
-        // 2. 資産総額行
+        // データ行
         let rowTotal = '<tr class="row-total"><td>資産総額</td>';
         dataPointsTotal.forEach(val => rowTotal += `<td>${val.toLocaleString()}</td>`);
         rowTotal += '</tr>';
 
-        // 3. 投資元本行
         let rowPrincipal = '<tr class="row-invested"><td>投資元本</td>';
         dataPointsPrincipal.forEach(val => rowPrincipal += `<td>${val.toLocaleString()}</td>`);
         rowPrincipal += '</tr>';
 
-        // 4. 利益行 (New!)
         let rowProfit = '<tr class="row-profit"><td>利益 (+)</td>';
         dataPointsProfit.forEach(val => rowProfit += `<td>+${val.toLocaleString()}</td>`);
         rowProfit += '</tr>';
