@@ -3,463 +3,319 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>年月表示対応ローン計算機</title>
-    
-    <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3QgeD0iMTIiIHk9IjgiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0OCIgcng9IjUiIGZpbGw9IiMyYzNlNTAiLz48cmVjdCB4PSIxOCIgeT0iMTYiIHdpZHRoPSIyOCIgaGVpZ2h0PSIxMiIgZmlsbD0iI2VjZjBmMSIvPjxjaXJjbGUgY3g9IjIyIiBjeT0iMzYiIHI9IjMiIGZpbGw9IiMzNDk4ZGIiLz48Y2lyY2xlIGN4PSIzMiIgY3k9IjM2IiByPSIzIiBmaWxsPSIjMzQ5OGRiIi8+PGNpcmNsZSBjeD0iNDIiIGN5PSIzNiIgcj0iMyIgZmlsbD0iIzM0OThkYiIvPjxjaXJjbGUgY3g9IjIyIiBjeT0iNDYiIHI9IjMiIGZpbGw9IiMzNDk4ZGIiLz48Y2lyY2xlIGN4PSIzMiIgY3k9IjQ2IiByPSIzIiBmaWxsPSIjMzQ5OGRiIi8+PGNpcmNsZSBjeD0iNDIiIGN5PSI0NiIgcj0iMyIgZmlsbD0iI2U3NGMzYyIvPjwvc3ZnPg==">
-
+    <title>資産運用シミュレーター (目標逆算・グラフ付)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: "Helvetica Neue", Arial, sans-serif;
-            background-color: #f0f2f5;
+            margin: 20px;
+            background-color: #f4f7f6;
             color: #333;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
         }
         .container {
-            background-color: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            width: 100%;
-            max-width: 1150px; /* 幅を微調整 */
-        }
-        h2 {
-            text-align: center;
-            color: #2c3e50;
-            margin-bottom: 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        
-        /* 共通スタイル */
-        .section-box {
-            background-color: #f8f9fa;
-            padding: 15px;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
             border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid #e9ecef;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-        .section-title {
-            font-weight: bold;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .section-title.orange { color: #d35400; }
-        .section-title.blue { color: #2980b9; }
-        .section-title.green { color: #27ae60; }
+        h1 { font-size: 24px; margin-bottom: 20px; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        h2 { font-size: 18px; margin-top: 30px; margin-bottom: 10px; border-left: 4px solid #007bff; padding-left: 10px; }
 
-        .input-grid {
+        /* 入力エリアの全体レイアウト */
+        .input-area {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
         }
-        
-        label { display: block; margin-bottom: 0.4rem; font-weight: bold; font-size: 0.85rem; color: #555; }
-        input[type="number"], input[type="month"], select { 
-            width: 100%; padding: 10px; font-size: 1rem; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; 
+
+        /* 個別の入力ボックス */
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            background-color: #eef2f7;
+            padding: 15px;
+            border-radius: 6px;
         }
-        
-        .toggle-label { display: flex; align-items: center; cursor: pointer; font-size: 0.95rem; }
-        .toggle-input { margin-right: 8px; transform: scale(1.3); accent-color: #d35400; }
+        .input-group label { font-weight: bold; margin-bottom: 8px; font-size: 14px; }
+        .input-group input {
+            padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; margin-bottom: 5px;
+        }
+        .unit { font-size: 12px; color: #666; text-align: right; }
 
-        .dynamic-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; background: white; padding: 8px; border-radius: 5px; border: 1px solid #eee; }
-        .dynamic-row input { padding: 8px; }
-        .dynamic-row select { width: auto; padding: 8px; }
-        .btn-add { background-color: #95a5a6; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
-        .btn-remove { background-color: #e74c3c; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
-
-        .calc-btn { width: 100%; padding: 15px; background-color: #3498db; color: white; border: none; border-radius: 6px; font-size: 1.2rem; font-weight: bold; cursor: pointer; transition: background 0.3s; box-shadow: 0 4px 6px rgba(52, 152, 219, 0.3); margin-top: 10px; }
-        .calc-btn:hover { background-color: #2980b9; }
-
-        /* 結果サマリーエリア */
-        .summary-box {
-            background-color: #2c3e50;
-            color: white;
+        /* 目標逆算エリア（特別デザイン） */
+        .goal-section {
+            grid-column: 1 / -1; /* 横幅いっぱい */
+            background-color: #fff8e1; /* 目立つように薄い黄色 */
+            border: 2px dashed #f6c23e;
             padding: 20px;
             border-radius: 8px;
-            margin-top: 30px;
+            margin-top: 10px;
+        }
+        .goal-inputs {
             display: flex;
-            justify-content: space-around;
-            text-align: center;
             flex-wrap: wrap;
             gap: 15px;
+            align-items: flex-end;
         }
-        .summary-item strong { display: block; font-size: 1.4rem; margin-bottom: 5px; color: #f1c40f; }
+        .goal-item { display: flex; flex-direction: column; }
+        .goal-item label { font-size: 13px; font-weight: bold; margin-bottom: 5px; }
+        .goal-item input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100px; }
+        
+        button.goal-btn {
+            padding: 10px 20px;
+            background-color: #f6c23e;
+            color: #333;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            height: 40px;
+        }
+        button.goal-btn:hover { background-color: #e0a800; }
 
-        .status-bar {
-            background-color: #ffffff;
-            border: 2px solid #e74c3c;
-            color: #c0392b;
+        /* メイン計算ボタン */
+        button.calc-btn {
+            grid-column: 1 / -1;
+            margin-top: 20px;
             padding: 15px;
-            border-radius: 8px;
-            margin-top: 15px;
-            text-align: center;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            flex-wrap: wrap;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
         }
-        .status-item { font-size: 1.1rem; font-weight: bold; }
-        .status-value { font-size: 1.8rem; color: #e74c3c; margin: 0 5px; }
-        .status-sub { font-size: 0.9rem; color: #666; margin-top: 5px; }
+        button.calc-btn:hover { background-color: #0056b3; }
 
-        .table-container { margin-top: 20px; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 950px; }
-        th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: right; vertical-align: middle;}
-        th { background-color: #ecf0f1; color: #2c3e50; text-align: center; font-weight: bold; white-space: nowrap; }
-        
-        .check-col { width: 40px; text-align: center; }
-        .check-input { transform: scale(1.5); cursor: pointer; }
-        
-        tr.paid-row { background-color: #ecf0f1; color: #95a5a6; text-decoration: line-through; }
-        tr.paid-row td { color: #95a5a6 !important; }
-
-        .rate-changed-row { background-color: #ffeaa7 !important; }
-        .prepayment-row { background-color: #d5f5e3 !important; }
-        .year-total-row { background-color: #f7f9f9; font-weight: bold; border-top: 2px solid #bdc3c7; color: #7f8c8d; }
-        
-        .prepay-type-label { font-size: 0.75rem; display: inline-block; padding: 2px 4px; border-radius: 3px; color: white; margin-right: 5px; }
-        .type-shorten { background-color: #e67e22; }
-        .type-reduce { background-color: #27ae60; }
-        .principal-balance-col { background-color: #fdfefe; font-weight: bold; color: #2c3e50; }
-        
-        /* 年月表示用のスタイル */
-        .date-cell { font-weight: bold; color: #2c3e50; }
-        .count-sub { font-size: 0.75rem; color: #95a5a6; font-weight: normal; margin-left: 5px; }
-
+        /* グラフと表 */
+        .chart-container { position: relative; height: 400px; width: 100%; margin-top: 20px; }
+        .table-wrapper { width: 100%; overflow-x: auto; margin-top: 20px; border: 1px solid #ddd; background: #fff; }
+        table { border-collapse: collapse; white-space: nowrap; width: max-content; }
+        th, td { border: 1px solid #ddd; padding: 10px 15px; text-align: right; font-size: 14px; }
+        th { background-color: #007bff; color: #fff; text-align: center; position: sticky; top: 0; left: 0; }
+        .row-header { position: sticky; left: 0; background-color: #007bff; color: white; z-index: 10; }
+        td:first-child { position: sticky; left: 0; background-color: #f9f9f9; font-weight: bold; z-index: 5; text-align: left;}
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2><span style="font-size: 1.5rem;">📊</span> 詳細ローンシミュレーター</h2>
-
-    <div class="section-box">
-        <div class="section-title">基本設定</div>
-        <div class="input-grid">
-            <div><label>借入元金 (円)</label><input type="number" id="principal" value="30000000"></div>
-            <div><label>当初金利 (年利 %)</label><input type="number" id="initialRate" step="0.01" value="0.5"></div>
-            <div><label>返済期間 (年)</label><input type="number" id="years" value="35"></div>
-            <div><label>返済開始月</label><input type="month" id="startMonth"></div>
+    <h1>資産運用シミュレーター</h1>
+    
+    <div class="input-area">
+        <div class="input-group">
+            <label>初期投資額</label>
+            <input type="number" id="initialPrincipal" value="1000000">
+            <span class="unit">円</span>
         </div>
-    </div>
-
-    <div class="section-box" style="border-left: 5px solid #d35400;">
-        <div class="section-title orange">🔒 当初期間固定モード</div>
-        <div style="margin-bottom:10px;">
-            <label class="toggle-label">
-                <input type="checkbox" id="useFixedMode" class="toggle-input" onchange="toggleFixedMode()">
-                このモードを有効にする（指定年数まで当初金利、その後変更）
-            </label>
-        </div>
-        <div class="input-grid" id="fixedModeInputs" style="opacity: 0.5; pointer-events: none;">
-            <div><label>固定期間 (年)</label><input type="number" id="fixedYears" value="10" placeholder="10"></div>
-            <div><label>期間終了後の金利 (%)</label><input type="number" id="postFixedRate" step="0.01" value="1.5" placeholder="1.5"></div>
-        </div>
-    </div>
-
-    <div class="section-box">
-        <div class="section-title blue">
-            📈 詳細な金利変動 (手動追加)
-            <button type="button" class="btn-add" onclick="addRateInput()">＋ 追加</button>
-        </div>
-        <div id="rateInputsContainer"></div>
-    </div>
-
-    <div class="section-box">
-        <div class="section-title green">
-            💰 繰り上げ返済設定
-            <button type="button" class="btn-add" onclick="addPrepayInput()">＋ 追加</button>
-        </div>
-        <div id="prepayInputsContainer"></div>
-    </div>
-
-    <button class="calc-btn" onclick="calculateLoan()">シミュレーション実行</button>
-
-    <div id="resultArea" style="display:none;">
-        
-        <div class="summary-box">
-            <div class="summary-item"><span id="totalPaymentDisplay">0 円</span><span>当初予定 総支払額</span></div>
-            <div class="summary-item"><span id="totalInterestDisplay">0 円</span><span>利息総額</span></div>
-            <div class="summary-item"><span id="actualMonthsDisplay">0 ヶ月</span><span>実質返済期間</span></div>
+        <div class="input-group">
+            <label>想定年利 (複利計算用)</label>
+            <input type="number" id="annualRate" value="4" step="0.1">
+            <span class="unit">% ※一般的に全世界株等は4-7%程度</span>
         </div>
 
-        <div class="status-bar" id="remainingStatus">
-            <div class="status-item">
-                残り返済回数：あと <span id="remainMonthsVal" class="status-value">0</span> ヶ月
+        <div class="goal-section">
+            <h3 style="margin-top:0; color:#d39e00;">目標から毎月の積立額を逆算</h3>
+            <div class="goal-inputs">
+                <div class="goal-item">
+                    <label>現在の年齢</label>
+                    <input type="number" id="currentAge" value="30" placeholder="30">
+                </div>
+                <div style="padding-bottom:10px;">歳から</div>
+                <div class="goal-item">
+                    <label>目標の年齢</label>
+                    <input type="number" id="targetAge" value="65" placeholder="65">
+                </div>
+                <div style="padding-bottom:10px;">歳までに</div>
+                <div class="goal-item">
+                    <label>目標金額</label>
+                    <input type="number" id="targetAmount" value="20000000" style="width:140px;">
+                </div>
+                <div style="padding-bottom:10px;">円ためたい</div>
+                
+                <button class="goal-btn" onclick="calcRequiredMonthly()">必要な積立額を計算＆反映 ▶</button>
             </div>
-            <div class="status-item" style="border-left: 1px solid #eee; padding-left: 20px;">
-                残り支払総額： <span id="remainAmountVal" style="font-size: 1.4rem; color:#333;">0</span> 円
-                <div class="status-sub">（元金＋利息の合計）</div>
-            </div>
-        </div>
-        <div style="text-align: right; font-size: 0.8rem; color: #7f8c8d; margin-top: 5px;">
-            ※チェックボックスの状態は保存されません。
+            <p style="font-size:12px; color:#666; margin-bottom:0;">※計算結果は下の「毎月の積立額」に自動入力されます。</p>
         </div>
 
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th class="check-col">済</th>
-                        <th>年月</th> <th>金利</th>
-                        <th>月支払額</th>
-                        <th>内) 利息</th>
-                        <th>内) 元金</th>
-                        <th>＋繰り上げ</th>
-                        <th style="font-size:0.8rem; line-height:1.2;">元金充当後の<br>元金残額</th>
-                        <th>残高</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody"></tbody>
-            </table>
+        <div class="input-group" style="grid-column: 1 / -1;">
+            <label style="font-size:16px; color:#007bff;">毎月の積立額 (ここが計算されます)</label>
+            <input type="number" id="monthlyDeposit" value="30000" style="font-weight:bold; background-color:#f0f8ff;">
+            <span class="unit">円</span>
         </div>
+
+        <div class="input-group" style="grid-column: 1 / -1;">
+            <label>途中での積立額変更 (任意)</label>
+            <div style="display:flex; align-items:center; flex-wrap:wrap; gap:10px;">
+                <span>開始から</span>
+                <input type="number" id="changeMonth" value="361" style="width:80px;">
+                <span>ヶ月目以降は、積立額を</span>
+                <input type="number" id="newMonthlyDeposit" value="50000" style="width:100px;">
+                <span>円にする</span>
+            </div>
+            <span class="unit">※変更しない場合は「361」ヶ月以上にするか、同額を入力</span>
+        </div>
+
+        <button class="calc-btn" onclick="calculateAndDraw()">グラフを更新</button>
+    </div>
+
+    <h2>資産推移グラフ</h2>
+    <div class="chart-container">
+        <canvas id="assetChart"></canvas>
+    </div>
+
+    <h2>詳細データ (スクロールで30年分確認)</h2>
+    <div class="table-wrapper">
+        <table id="resultTable">
+            <thead></thead>
+            <tbody></tbody>
+        </table>
     </div>
 </div>
 
 <script>
-    // ページ読み込み時に、返済開始月に「今月」をデフォルトセット
-    window.onload = function() {
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        document.getElementById('startMonth').value = `${yyyy}-${mm}`;
-    };
+    let myChart = null;
 
-    // --- UI制御 ---
-    function toggleFixedMode() {
-        const isChecked = document.getElementById('useFixedMode').checked;
-        const inputs = document.getElementById('fixedModeInputs');
-        if (isChecked) { inputs.style.opacity = "1"; inputs.style.pointerEvents = "auto"; } 
-        else { inputs.style.opacity = "0.5"; inputs.style.pointerEvents = "none"; }
-    }
+    // --- 逆算機能 (目標金額を達成するための積立額を計算) ---
+    function calcRequiredMonthly() {
+        const currentAge = parseFloat(document.getElementById('currentAge').value);
+        const targetAge = parseFloat(document.getElementById('targetAge').value);
+        const targetAmount = parseFloat(document.getElementById('targetAmount').value);
+        const initialPrincipal = parseFloat(document.getElementById('initialPrincipal').value);
+        const annualRate = parseFloat(document.getElementById('annualRate').value);
 
-    function addRateInput() {
-        const container = document.getElementById('rateInputsContainer');
-        const div = document.createElement('div');
-        div.className = 'dynamic-row';
-        div.innerHTML = `<span>開始から</span><input type="number" class="change-month-rate" placeholder="月" style="width:60px;"><span>ヶ月目に</span><input type="number" class="change-val-rate" step="0.01" placeholder="%" style="width:70px;"><span>% に</span><button class="btn-remove" onclick="this.parentElement.remove()">×</button>`;
-        container.appendChild(div);
-    }
-
-    function addPrepayInput() {
-        const container = document.getElementById('prepayInputsContainer');
-        const div = document.createElement('div');
-        div.className = 'dynamic-row';
-        div.innerHTML = `<span>開始から</span><input type="number" class="change-month-prepay" placeholder="月" style="width:60px;"><span>ヶ月目に</span><input type="number" class="change-val-prepay" placeholder="円" style="width:100px;"><span>円を</span><select class="change-type-prepay"><option value="shorten">期間短縮型</option><option value="reduce">返済額軽減型</option></select><button class="btn-remove" onclick="this.parentElement.remove()">×</button>`;
-        container.appendChild(div);
-    }
-
-    // --- 計算ロジック ---
-    function calculateLoan() {
-        const principalInput = parseFloat(document.getElementById('principal').value);
-        const initialRateInput = parseFloat(document.getElementById('initialRate').value);
-        const yearsInput = parseFloat(document.getElementById('years').value);
-        const startMonthInput = document.getElementById('startMonth').value; // 年月取得
-
-        if (!principalInput || initialRateInput === "" || !yearsInput) {
-            alert("基本項目をすべて入力してください。");
+        if (targetAge <= currentAge) {
+            alert("目標年齢は現在の年齢より大きくしてください");
             return;
         }
 
-        // 開始年月のパース
-        let startYear = 0;
-        let startMonthIdx = 0; // 0-11
-        if (startMonthInput) {
-            const parts = startMonthInput.split('-');
-            startYear = parseInt(parts[0]);
-            startMonthIdx = parseInt(parts[1]) - 1;
+        // 運用期間（月数）
+        const months = (targetAge - currentAge) * 12;
+        const r = annualRate / 100 / 12; // 月利
+
+        // 1. まず初期投資額が将来いくらになるか計算 (FV_initial)
+        // FV = PV * (1+r)^n
+        let fvInitial = initialPrincipal * Math.pow(1 + r, months);
+
+        // 2. 目標額から、初期投資の成長分を引く (不足分)
+        let neededAmount = targetAmount - fvInitial;
+
+        if (neededAmount <= 0) {
+            alert("初期投資額だけで目標を達成できる計算です（積立不要）");
+            document.getElementById('monthlyDeposit').value = 0;
+            calculateAndDraw();
+            return;
+        }
+
+        // 3. 不足分を埋めるための毎月積立額 (PMT) を計算
+        // PMT = Needed * r / ((1+r)^n - 1)
+        let pmt = 0;
+        if (annualRate === 0) {
+            pmt = neededAmount / months;
         } else {
-            // 未入力の場合のフォールバック（今日）
-            const d = new Date();
-            startYear = d.getFullYear();
-            startMonthIdx = d.getMonth();
+            pmt = (neededAmount * r) / (Math.pow(1 + r, months) - 1);
         }
 
-        const rateChanges = {};
-        if (document.getElementById('useFixedMode').checked) {
-            const fixedYears = parseInt(document.getElementById('fixedYears').value);
-            const postRate = parseFloat(document.getElementById('postFixedRate').value);
-            if (fixedYears && !isNaN(postRate)) rateChanges[(fixedYears * 12) + 1] = postRate;
-        }
-        document.querySelectorAll('#rateInputsContainer .dynamic-row').forEach(row => {
-            const m = parseInt(row.querySelector('.change-month-rate').value);
-            const r = parseFloat(row.querySelector('.change-val-rate').value);
-            if (m && !isNaN(r)) rateChanges[m] = r;
-        });
+        // 結果を「毎月の積立額」ボックスに入れる (1円単位で四捨五入)
+        const resultPmt = Math.round(pmt);
+        document.getElementById('monthlyDeposit').value = resultPmt;
 
-        const prepayments = {};
-        document.querySelectorAll('#prepayInputsContainer .dynamic-row').forEach(row => {
-            const m = parseInt(row.querySelector('.change-month-prepay').value);
-            const v = parseFloat(row.querySelector('.change-val-prepay').value);
-            const type = row.querySelector('.change-type-prepay').value;
-            if (m && v) prepayments[m] = { amount: v, type: type };
-        });
-
-        let currentBalance = principalInput;
-        let currentRate = initialRateInput;
-        let totalInterest = 0;
-        let totalPayments = 0;
-        const totalMonths = yearsInput * 12;
+        // 計算結果をアラートで通知し、グラフを更新
+        alert(`【計算結果】\n${targetAge}歳までに${targetAmount.toLocaleString()}円を貯めるには、\n毎月 約 ${resultPmt.toLocaleString()} 円 の積立が必要です。\n(年利${annualRate}%想定)`);
         
-        let tableHTML = "";
-        let yearlyPrincipal = 0, yearlyInterest = 0, yearlyPrepay = 0;
-        let actualMonths = 0;
+        calculateAndDraw(); // グラフも自動更新
+    }
 
-        let monthlyPayment = calculatePMT(currentBalance, currentRate, totalMonths);
 
-        for (let i = 1; i <= totalMonths + 120; i++) {
-            if (currentBalance <= 0) { actualMonths = i - 1; break; }
+    // --- メイン計算 & グラフ描画 ---
+    function calculateAndDraw() {
+        const initialPrincipal = Number(document.getElementById('initialPrincipal').value);
+        const annualRate = Number(document.getElementById('annualRate').value);
+        const baseDeposit = Number(document.getElementById('monthlyDeposit').value);
+        
+        const changeMonth = Number(document.getElementById('changeMonth').value);
+        const newDeposit = Number(document.getElementById('newMonthlyDeposit').value);
 
-            // 金利変動
-            let rateChanged = false;
-            if (rateChanges[i] !== undefined) {
-                currentRate = rateChanges[i];
-                rateChanged = true;
-                const remainingMonths = Math.max(1, totalMonths - i + 1);
-                monthlyPayment = calculatePMT(currentBalance, currentRate, remainingMonths);
-            }
+        const years = 30; // グラフは一律30年分表示します
+        const totalMonths = years * 12;
+        const monthlyRate = annualRate / 100 / 12;
 
-            // 繰り上げ
-            let prepayAmount = 0;
-            let prepayType = "";
-            if (prepayments[i]) {
-                prepayAmount = prepayments[i].amount;
-                prepayType = prepayments[i].type;
-                if (prepayAmount > currentBalance) prepayAmount = currentBalance;
-            }
+        let currentAmount = initialPrincipal;
+        let labels = [];
+        let dataPoints = [];
 
-            const monthlyRate = (currentRate / 100) / 12;
-            let interestPart = Math.floor(currentBalance * monthlyRate);
-            let principalPart = monthlyPayment - interestPart;
+        labels.push("現在");
+        dataPoints.push(Math.floor(currentAmount));
 
-            if (currentBalance <= principalPart + interestPart) {
-                principalPart = currentBalance;
-                monthlyPayment = principalPart + interestPart;
-            }
+        for (let i = 1; i <= totalMonths; i++) {
+            currentAmount = currentAmount * (1 + monthlyRate);
+            let deposit = (i >= changeMonth) ? newDeposit : baseDeposit;
+            currentAmount += deposit;
 
-            currentBalance -= principalPart;
+            labels.push(i + "ヶ月");
+            dataPoints.push(Math.floor(currentAmount));
+        }
 
-            if (prepayAmount > 0) {
-                currentBalance -= prepayAmount;
-                if (currentBalance > 0 && prepayType === 'reduce') {
-                    const remaining = Math.max(1, totalMonths - i);
-                    monthlyPayment = calculatePMT(currentBalance, currentRate, remaining);
-                } else if (currentBalance <= 0) {
-                    currentBalance = 0;
+        // グラフ描画
+        const ctx = document.getElementById('assetChart').getContext('2d');
+        if (myChart) myChart.destroy();
+
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels.filter((_, i) => i % 12 === 0), 
+                datasets: [{
+                    label: '資産総額推移',
+                    data: dataPoints.filter((_, i) => i % 12 === 0),
+                    borderColor: 'rgba(0, 123, 255, 1)',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' }).format(context.parsed.y);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true,
+                        ticks: { callback: function(val) { return val / 10000 + '万円'; } }
+                    }
                 }
             }
-
-            const thisMonthTotalPay = monthlyPayment + prepayAmount;
-
-            totalInterest += interestPart;
-            totalPayments += thisMonthTotalPay;
-            yearlyPrincipal += principalPart;
-            yearlyInterest += interestPart;
-            yearlyPrepay += prepayAmount;
-
-            let rowClass = "";
-            let infoText = "-";
-            
-            if (prepayAmount > 0) {
-                rowClass = "prepayment-row";
-                const typeLabel = prepayType === 'shorten' ? `<span class="prepay-type-label type-shorten">短縮</span>` : `<span class="prepay-type-label type-reduce">軽減</span>`;
-                infoText = typeLabel + `+${prepayAmount.toLocaleString()}`;
-            } else if (rateChanged) {
-                rowClass = "rate-changed-row";
-            }
-
-            // --- 年月計算ロジック ---
-            // i=1のとき startMonthIdx + 0
-            const currentTotalMonthIdx = startMonthIdx + (i - 1);
-            const calcYear = startYear + Math.floor(currentTotalMonthIdx / 12);
-            const calcMonth = (currentTotalMonthIdx % 12) + 1;
-            const dateStr = `${calcYear}年${calcMonth}月`;
-
-            // HTML生成
-            tableHTML += `
-                <tr class="${rowClass}" id="row-${i}">
-                    <td class="check-col">
-                        <input type="checkbox" class="check-input" onchange="updateRemainingStatus(this, ${i})" data-pay="${thisMonthTotalPay}">
-                    </td>
-                    <td style="text-align:center;">
-                        <span class="date-cell">${dateStr}</span>
-                        <span class="count-sub">(${i})</span>
-                    </td>
-                    <td style="text-align:center;">${currentRate.toFixed(2)}%</td>
-                    <td>${monthlyPayment.toLocaleString()}</td>
-                    <td style="color:#e74c3c;">${interestPart.toLocaleString()}</td>
-                    <td style="color:#2980b9;">${principalPart.toLocaleString()}</td>
-                    <td style="text-align:center;">${infoText}</td>
-                    <td class="principal-balance-col" style="text-align:right;">${Math.max(0, currentBalance).toLocaleString()}</td>
-                    <td>${Math.max(0, currentBalance).toLocaleString()}</td>
-                </tr>
-            `;
-
-            if (i % 12 === 0 || currentBalance === 0) {
-                if(i % 12 === 0){
-                     tableHTML += `
-                        <tr class="year-total-row">
-                            <td>-</td>
-                            <td colspan="2" style="text-align:center;">${i/12}年目の合計</td>
-                            <td>${(yearlyPrincipal+yearlyInterest).toLocaleString()}</td>
-                            <td>${yearlyInterest.toLocaleString()}</td>
-                            <td>${yearlyPrincipal.toLocaleString()}</td>
-                            <td style="text-align:center; color:#27ae60;">${yearlyPrepay > 0 ? "+" + yearlyPrepay.toLocaleString() : "-"}</td>
-                            <td>-</td>
-                            <td>-</td>
-                        </tr>
-                    `;
-                    yearlyPrincipal = 0; yearlyInterest = 0; yearlyPrepay = 0;
-                }
-            }
-        }
-
-        document.getElementById('totalPaymentDisplay').innerText = totalPayments.toLocaleString() + " 円";
-        document.getElementById('totalInterestDisplay').innerText = totalInterest.toLocaleString() + " 円";
-        document.getElementById('actualMonthsDisplay').innerText = actualMonths + " ヶ月 (" + (actualMonths/12).toFixed(1) + "年)";
-        document.getElementById('tableBody').innerHTML = tableHTML;
-        
-        document.getElementById('resultArea').style.display = 'block';
-        updateRemainingStatus();
-    }
-
-    function calculatePMT(P, ratePercent, months) {
-        if (P <= 0) return 0;
-        if (ratePercent === 0) return Math.floor(P / months);
-        const r = (ratePercent / 100) / 12;
-        const pmt = P * r * Math.pow(1 + r, months) / (Math.pow(1 + r, months) - 1);
-        return Math.floor(pmt);
-    }
-
-    function updateRemainingStatus(checkbox, rowIndex) {
-        if(checkbox) {
-            const row = document.getElementById('row-' + rowIndex);
-            if(checkbox.checked) { row.classList.add('paid-row'); } 
-            else { row.classList.remove('paid-row'); }
-        }
-
-        const allChecks = document.querySelectorAll('.check-input');
-        let remainingCount = 0;
-        let remainingAmount = 0;
-
-        allChecks.forEach(chk => {
-            if (!chk.checked) {
-                remainingCount++;
-                remainingAmount += parseFloat(chk.getAttribute('data-pay')) || 0;
-            }
         });
 
-        document.getElementById('remainMonthsVal').innerText = remainingCount;
-        document.getElementById('remainAmountVal').innerText = remainingAmount.toLocaleString();
+        // 表の作成
+        const tableHead = document.querySelector('#resultTable thead');
+        const tableBody = document.querySelector('#resultTable tbody');
+        tableHead.innerHTML = '';
+        tableBody.innerHTML = '';
+
+        let headerHTML = '<tr><th class="row-header">経過月</th>';
+        labels.forEach(label => headerHTML += `<th>${label}</th>`);
+        headerHTML += '</tr>';
+        tableHead.innerHTML = headerHTML;
+
+        let rowHTML = '<tr><td>金額</td>';
+        dataPoints.forEach(val => rowHTML += `<td>${val.toLocaleString()}</td>`);
+        rowHTML += '</tr>';
+        tableBody.innerHTML = rowHTML;
     }
+
+    window.onload = calculateAndDraw;
 </script>
 
 </body>
