@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>資産運用シミュレーター (目標逆算・グラフ付)</title>
+    <title>資産運用シミュレーター (利益・元本比較あり)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -23,14 +23,11 @@
         h1 { font-size: 24px; margin-bottom: 20px; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
         h2 { font-size: 18px; margin-top: 30px; margin-bottom: 10px; border-left: 4px solid #007bff; padding-left: 10px; }
 
-        /* 入力エリアの全体レイアウト */
         .input-area {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 20px;
         }
-
-        /* 個別の入力ボックス */
         .input-group {
             display: flex;
             flex-direction: column;
@@ -39,71 +36,64 @@
             border-radius: 6px;
         }
         .input-group label { font-weight: bold; margin-bottom: 8px; font-size: 14px; }
-        .input-group input {
-            padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; margin-bottom: 5px;
-        }
+        .input-group input { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; margin-bottom: 5px; }
         .unit { font-size: 12px; color: #666; text-align: right; }
 
-        /* 目標逆算エリア（特別デザイン） */
+        /* 目標逆算エリア */
         .goal-section {
-            grid-column: 1 / -1; /* 横幅いっぱい */
-            background-color: #fff8e1; /* 目立つように薄い黄色 */
+            grid-column: 1 / -1;
+            background-color: #fff8e1;
             border: 2px dashed #f6c23e;
             padding: 20px;
             border-radius: 8px;
             margin-top: 10px;
         }
-        .goal-inputs {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            align-items: flex-end;
-        }
+        .goal-inputs { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
         .goal-item { display: flex; flex-direction: column; }
         .goal-item label { font-size: 13px; font-weight: bold; margin-bottom: 5px; }
         .goal-item input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100px; }
         
         button.goal-btn {
-            padding: 10px 20px;
-            background-color: #f6c23e;
-            color: #333;
-            border: none;
-            border-radius: 4px;
-            font-weight: bold;
-            cursor: pointer;
-            height: 40px;
+            padding: 10px 20px; background-color: #f6c23e; color: #333; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; height: 40px;
         }
         button.goal-btn:hover { background-color: #e0a800; }
 
-        /* メイン計算ボタン */
         button.calc-btn {
-            grid-column: 1 / -1;
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
+            grid-column: 1 / -1; margin-top: 20px; padding: 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; font-size: 18px; font-weight: bold; cursor: pointer;
         }
         button.calc-btn:hover { background-color: #0056b3; }
 
-        /* グラフと表 */
+        /* 結果表示エリア */
+        .summary-box {
+            background-color: #e3f2fd;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .summary-value { font-size: 24px; font-weight: bold; color: #007bff; margin: 0 10px; }
+        .summary-label { font-size: 14px; color: #555; }
+        .profit-text { color: #28a745; } /* 利益の緑色 */
+
         .chart-container { position: relative; height: 400px; width: 100%; margin-top: 20px; }
         .table-wrapper { width: 100%; overflow-x: auto; margin-top: 20px; border: 1px solid #ddd; background: #fff; }
         table { border-collapse: collapse; white-space: nowrap; width: max-content; }
         th, td { border: 1px solid #ddd; padding: 10px 15px; text-align: right; font-size: 14px; }
         th { background-color: #007bff; color: #fff; text-align: center; position: sticky; top: 0; left: 0; }
         .row-header { position: sticky; left: 0; background-color: #007bff; color: white; z-index: 10; }
-        td:first-child { position: sticky; left: 0; background-color: #f9f9f9; font-weight: bold; z-index: 5; text-align: left;}
+        
+        /* 表の行の色分け */
+        .row-total td { font-weight: bold; background-color: #f0f8ff; }
+        .row-invested td { color: #666; }
+        .row-profit td { color: #28a745; font-weight: bold; }
+        
+        td:first-child { position: sticky; left: 0; background-color: #f9f9f9; font-weight: bold; z-index: 5; text-align: left; min-width: 100px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>資産運用シミュレーター</h1>
+    <h1>資産運用シミュレーター (利益表示対応)</h1>
     
     <div class="input-area">
         <div class="input-group">
@@ -112,22 +102,22 @@
             <span class="unit">円</span>
         </div>
         <div class="input-group">
-            <label>想定年利 (複利計算用)</label>
-            <input type="number" id="annualRate" value="4" step="0.1">
-            <span class="unit">% ※一般的に全世界株等は4-7%程度</span>
+            <label>想定年利 (%)</label>
+            <input type="number" id="annualRate" value="5" step="0.1">
+            <span class="unit">※全世界株等は4-7%程度</span>
         </div>
 
         <div class="goal-section">
-            <h3 style="margin-top:0; color:#d39e00;">目標から毎月の積立額を逆算</h3>
+            <h3 style="margin-top:0; color:#d39e00;">目標から逆算 (任意)</h3>
             <div class="goal-inputs">
                 <div class="goal-item">
                     <label>現在の年齢</label>
-                    <input type="number" id="currentAge" value="30" placeholder="30">
+                    <input type="number" id="currentAge" value="30">
                 </div>
                 <div style="padding-bottom:10px;">歳から</div>
                 <div class="goal-item">
                     <label>目標の年齢</label>
-                    <input type="number" id="targetAge" value="65" placeholder="65">
+                    <input type="number" id="targetAge" value="65">
                 </div>
                 <div style="padding-bottom:10px;">歳までに</div>
                 <div class="goal-item">
@@ -136,13 +126,12 @@
                 </div>
                 <div style="padding-bottom:10px;">円ためたい</div>
                 
-                <button class="goal-btn" onclick="calcRequiredMonthly()">必要な積立額を計算＆反映 ▶</button>
+                <button class="goal-btn" onclick="calcRequiredMonthly()">計算＆反映 ▶</button>
             </div>
-            <p style="font-size:12px; color:#666; margin-bottom:0;">※計算結果は下の「毎月の積立額」に自動入力されます。</p>
         </div>
 
         <div class="input-group" style="grid-column: 1 / -1;">
-            <label style="font-size:16px; color:#007bff;">毎月の積立額 (ここが計算されます)</label>
+            <label style="font-size:16px; color:#007bff;">毎月の積立額</label>
             <input type="number" id="monthlyDeposit" value="30000" style="font-weight:bold; background-color:#f0f8ff;">
             <span class="unit">円</span>
         </div>
@@ -152,22 +141,36 @@
             <div style="display:flex; align-items:center; flex-wrap:wrap; gap:10px;">
                 <span>開始から</span>
                 <input type="number" id="changeMonth" value="361" style="width:80px;">
-                <span>ヶ月目以降は、積立額を</span>
+                <span>ヶ月目以降、</span>
                 <input type="number" id="newMonthlyDeposit" value="50000" style="width:100px;">
                 <span>円にする</span>
             </div>
-            <span class="unit">※変更しない場合は「361」ヶ月以上にするか、同額を入力</span>
         </div>
 
-        <button class="calc-btn" onclick="calculateAndDraw()">グラフを更新</button>
+        <button class="calc-btn" onclick="calculateAndDraw()">シミュレーション実行</button>
     </div>
 
-    <h2>資産推移グラフ</h2>
+    <div id="summaryResult" class="summary-box" style="display:none;">
+        <h3>30年後の結果</h3>
+        <div>
+            <span class="summary-label">総資産額:</span>
+            <span class="summary-value" id="dispTotal">0円</span>
+        </div>
+        <div style="margin-top:10px;">
+            <span class="summary-label">うち投資元本:</span>
+            <span id="dispPrincipal" style="font-weight:bold; margin-right:15px;">0円</span>
+            
+            <span class="summary-label">利益(プラス):</span>
+            <span class="summary-value profit-text" id="dispProfit">+0円</span>
+        </div>
+    </div>
+
+    <h2>資産推移グラフ (青：総額 / 灰：元本)</h2>
     <div class="chart-container">
         <canvas id="assetChart"></canvas>
     </div>
 
-    <h2>詳細データ (スクロールで30年分確認)</h2>
+    <h2>詳細データ (右へスクロール)</h2>
     <div class="table-wrapper">
         <table id="resultTable">
             <thead></thead>
@@ -179,7 +182,7 @@
 <script>
     let myChart = null;
 
-    // --- 逆算機能 (目標金額を達成するための積立額を計算) ---
+    // --- 逆算機能 ---
     function calcRequiredMonthly() {
         const currentAge = parseFloat(document.getElementById('currentAge').value);
         const targetAge = parseFloat(document.getElementById('targetAge').value);
@@ -187,79 +190,72 @@
         const initialPrincipal = parseFloat(document.getElementById('initialPrincipal').value);
         const annualRate = parseFloat(document.getElementById('annualRate').value);
 
-        if (targetAge <= currentAge) {
-            alert("目標年齢は現在の年齢より大きくしてください");
-            return;
-        }
-
-        // 運用期間（月数）
+        if (targetAge <= currentAge) { alert("目標年齢を確認してください"); return; }
+        
         const months = (targetAge - currentAge) * 12;
-        const r = annualRate / 100 / 12; // 月利
-
-        // 1. まず初期投資額が将来いくらになるか計算 (FV_initial)
-        // FV = PV * (1+r)^n
+        const r = annualRate / 100 / 12;
+        
         let fvInitial = initialPrincipal * Math.pow(1 + r, months);
-
-        // 2. 目標額から、初期投資の成長分を引く (不足分)
         let neededAmount = targetAmount - fvInitial;
 
         if (neededAmount <= 0) {
-            alert("初期投資額だけで目標を達成できる計算です（積立不要）");
             document.getElementById('monthlyDeposit').value = 0;
-            calculateAndDraw();
-            return;
-        }
-
-        // 3. 不足分を埋めるための毎月積立額 (PMT) を計算
-        // PMT = Needed * r / ((1+r)^n - 1)
-        let pmt = 0;
-        if (annualRate === 0) {
-            pmt = neededAmount / months;
         } else {
-            pmt = (neededAmount * r) / (Math.pow(1 + r, months) - 1);
+            let pmt = (annualRate === 0) ? neededAmount / months : (neededAmount * r) / (Math.pow(1 + r, months) - 1);
+            document.getElementById('monthlyDeposit').value = Math.round(pmt);
         }
-
-        // 結果を「毎月の積立額」ボックスに入れる (1円単位で四捨五入)
-        const resultPmt = Math.round(pmt);
-        document.getElementById('monthlyDeposit').value = resultPmt;
-
-        // 計算結果をアラートで通知し、グラフを更新
-        alert(`【計算結果】\n${targetAge}歳までに${targetAmount.toLocaleString()}円を貯めるには、\n毎月 約 ${resultPmt.toLocaleString()} 円 の積立が必要です。\n(年利${annualRate}%想定)`);
-        
-        calculateAndDraw(); // グラフも自動更新
+        calculateAndDraw();
     }
 
-
-    // --- メイン計算 & グラフ描画 ---
+    // --- メイン計算 ---
     function calculateAndDraw() {
         const initialPrincipal = Number(document.getElementById('initialPrincipal').value);
         const annualRate = Number(document.getElementById('annualRate').value);
         const baseDeposit = Number(document.getElementById('monthlyDeposit').value);
-        
         const changeMonth = Number(document.getElementById('changeMonth').value);
         const newDeposit = Number(document.getElementById('newMonthlyDeposit').value);
 
-        const years = 30; // グラフは一律30年分表示します
+        const years = 30;
         const totalMonths = years * 12;
         const monthlyRate = annualRate / 100 / 12;
 
-        let currentAmount = initialPrincipal;
-        let labels = [];
-        let dataPoints = [];
+        let currentAmount = initialPrincipal; // 複利運用後の額
+        let currentPrincipal = initialPrincipal; // 自分が払った元本合計
 
-        labels.push("現在");
-        dataPoints.push(Math.floor(currentAmount));
+        // データ配列
+        let labels = ["現在"];
+        let dataPointsTotal = [Math.floor(currentAmount)]; // 総額
+        let dataPointsPrincipal = [Math.floor(currentPrincipal)]; // 元本
+        let dataPointsProfit = [0]; // 利益
 
         for (let i = 1; i <= totalMonths; i++) {
+            // 複利計算
             currentAmount = currentAmount * (1 + monthlyRate);
+            
+            // 積立額決定
             let deposit = (i >= changeMonth) ? newDeposit : baseDeposit;
+            
+            // 加算
             currentAmount += deposit;
+            currentPrincipal += deposit;
 
             labels.push(i + "ヶ月");
-            dataPoints.push(Math.floor(currentAmount));
+            dataPointsTotal.push(Math.floor(currentAmount));
+            dataPointsPrincipal.push(Math.floor(currentPrincipal));
+            dataPointsProfit.push(Math.floor(currentAmount - currentPrincipal));
         }
 
-        // グラフ描画
+        // --- サマリー表示 ---
+        document.getElementById('summaryResult').style.display = 'block';
+        const lastTotal = dataPointsTotal[totalMonths];
+        const lastPrincipal = dataPointsPrincipal[totalMonths];
+        const lastProfit = lastTotal - lastPrincipal;
+
+        document.getElementById('dispTotal').innerText = lastTotal.toLocaleString() + "円";
+        document.getElementById('dispPrincipal').innerText = lastPrincipal.toLocaleString() + "円";
+        document.getElementById('dispProfit').innerText = "+" + lastProfit.toLocaleString() + "円";
+
+        // --- グラフ描画 ---
         const ctx = document.getElementById('assetChart').getContext('2d');
         if (myChart) myChart.destroy();
 
@@ -267,24 +263,47 @@
             type: 'line',
             data: {
                 labels: labels.filter((_, i) => i % 12 === 0), 
-                datasets: [{
-                    label: '資産総額推移',
-                    data: dataPoints.filter((_, i) => i % 12 === 0),
-                    borderColor: 'rgba(0, 123, 255, 1)',
-                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.1
-                }]
+                datasets: [
+                    {
+                        label: '資産総額 (複利効果込)',
+                        data: dataPointsTotal.filter((_, i) => i % 12 === 0),
+                        borderColor: '#007bff', // 青
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.1
+                    },
+                    {
+                        label: '投資元本 (払った額)',
+                        data: dataPointsPrincipal.filter((_, i) => i % 12 === 0),
+                        borderColor: '#999', // グレー
+                        backgroundColor: 'rgba(0, 0, 0, 0)',
+                        borderWidth: 2,
+                        borderDash: [5, 5], // 点線
+                        tension: 0.1
+                    }
+                ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
                 plugins: {
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' }).format(context.parsed.y);
+                                let label = context.dataset.label || '';
+                                if (label) label += ': ';
+                                if (context.parsed.y !== null) label += context.parsed.y.toLocaleString() + '円';
+                                return label;
+                            },
+                            afterBody: function(tooltipItems) {
+                                // ツールチップに利益額も追加表示
+                                const dataIndex = tooltipItems[0].dataIndex; 
+                                // filterしているので、実際のインデックスを計算(12倍)
+                                const actualIndex = dataIndex * 12;
+                                const profit = dataPointsProfit[actualIndex];
+                                return '\n💰 利益: +' + profit.toLocaleString() + '円';
                             }
                         }
                     }
@@ -298,21 +317,34 @@
             }
         });
 
-        // 表の作成
+        // --- 表の作成 ---
         const tableHead = document.querySelector('#resultTable thead');
         const tableBody = document.querySelector('#resultTable tbody');
         tableHead.innerHTML = '';
         tableBody.innerHTML = '';
 
+        // 1. ヘッダー (経過月)
         let headerHTML = '<tr><th class="row-header">経過月</th>';
         labels.forEach(label => headerHTML += `<th>${label}</th>`);
         headerHTML += '</tr>';
         tableHead.innerHTML = headerHTML;
 
-        let rowHTML = '<tr><td>金額</td>';
-        dataPoints.forEach(val => rowHTML += `<td>${val.toLocaleString()}</td>`);
-        rowHTML += '</tr>';
-        tableBody.innerHTML = rowHTML;
+        // 2. 資産総額行
+        let rowTotal = '<tr class="row-total"><td>資産総額</td>';
+        dataPointsTotal.forEach(val => rowTotal += `<td>${val.toLocaleString()}</td>`);
+        rowTotal += '</tr>';
+
+        // 3. 投資元本行
+        let rowPrincipal = '<tr class="row-invested"><td>投資元本</td>';
+        dataPointsPrincipal.forEach(val => rowPrincipal += `<td>${val.toLocaleString()}</td>`);
+        rowPrincipal += '</tr>';
+
+        // 4. 利益行 (New!)
+        let rowProfit = '<tr class="row-profit"><td>利益 (+)</td>';
+        dataPointsProfit.forEach(val => rowProfit += `<td>+${val.toLocaleString()}</td>`);
+        rowProfit += '</tr>';
+
+        tableBody.innerHTML = rowTotal + rowPrincipal + rowProfit;
     }
 
     window.onload = calculateAndDraw;
